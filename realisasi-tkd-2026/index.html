@@ -1,0 +1,365 @@
+<!DOCTYPE html>
+<html>
+<head>
+<base target="_top">
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="robots" content="noindex, nofollow">
+<title>Input Realisasi TKD 2026</title>
+<style>
+  :root{--bg:#f5f6f8;--card:#fff;--ink:#1f2937;--mute:#6b7280;--line:#e5e7eb;--pri:#0f5fa8;--ok:#15803d;--err:#b91c1c;--warn:#fff8e1}
+  *{box-sizing:border-box}
+  body{margin:0;font-family:system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;background:var(--bg);color:var(--ink);font-size:14px}
+  header{background:var(--pri);color:#fff;padding:14px 16px}
+  header h1{margin:0;font-size:17px}
+  header p{margin:2px 0 0;opacity:.85;font-size:12px}
+  main{max-width:1000px;margin:0 auto;padding:16px}
+  .card{background:var(--card);border:1px solid var(--line);border-radius:10px;padding:16px;margin-bottom:12px}
+  .login{max-width:380px;margin:40px auto}
+  label{font-weight:600;font-size:13px;display:block;margin-bottom:6px}
+  input,textarea,select{width:100%;padding:9px 10px;border:1px solid #cbd5e1;border-radius:7px;font:inherit}
+  input:focus,textarea:focus{outline:2px solid #93c5fd;border-color:var(--pri)}
+  textarea{font-family:ui-monospace,Consolas,monospace;font-size:12.5px;resize:vertical;min-height:58px}
+  button{background:var(--pri);color:#fff;border:0;border-radius:7px;padding:10px 16px;font:inherit;font-weight:600;cursor:pointer}
+  button.ghost{background:transparent;color:var(--pri);border:1px solid var(--pri)}
+  button:disabled{opacity:.5;cursor:default}
+  .msg{margin-top:10px;font-size:13px}
+  .err{color:var(--err)} .ok{color:var(--ok)}
+  .top{display:flex;justify-content:space-between;align-items:flex-start;gap:12px;flex-wrap:wrap}
+  .stats{display:flex;gap:18px;flex-wrap:wrap;margin-top:8px}
+  .stat b{display:block;font-size:16px}
+  .stat span{color:var(--mute);font-size:12px}
+  .bar{height:6px;background:var(--line);border-radius:3px;margin-top:10px;overflow:hidden}
+  .bar i{display:block;height:100%;background:var(--ok)}
+  .filters{padding:12px 16px}
+  .fgrid{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:10px}
+  .fgrid label{font-size:12px;color:var(--mute);margin:0}
+  .fgrid select,.fgrid input{margin-top:4px;color:var(--ink);font-size:14px;font-weight:400}
+  .ro-note{background:#eef2ff;color:#3730a3;border-radius:8px;padding:8px 12px;font-size:13px;margin-bottom:12px}
+  .badge{display:inline-block;background:#fde68a;color:#78350f;font-size:11px;font-weight:700;padding:2px 8px;border-radius:999px;margin-left:6px;vertical-align:middle}
+  .group h3{margin:18px 0 8px;font-size:13px;color:var(--mute);text-transform:uppercase;letter-spacing:.03em}
+  .row{background:var(--card);border:1px solid var(--line);border-radius:10px;padding:12px 14px;margin-bottom:8px}
+  .row.dirty{border-color:#f59e0b;box-shadow:0 0 0 1px #f59e0b inset}
+  .row.bad{border-color:var(--err)}
+  .meta{font-size:12px;color:var(--mute)}
+  .rek{font-weight:600;margin:2px 0 8px}
+  .grid{display:grid;grid-template-columns:170px 1fr 1.6fr;gap:12px;align-items:start}
+  .ro{padding:9px 0}
+  .real input{background:var(--warn);text-align:right}
+  .hint{font-size:11.5px;color:var(--mute);margin-top:4px;line-height:1.4}
+  .hint code{background:#f1f5f9;padding:1px 4px;border-radius:4px}
+  .locked{color:var(--mute);font-style:italic;font-size:12.5px;padding:9px 0}
+  .rowerr{color:var(--err);font-size:12px;margin-top:6px}
+  .savebar{position:sticky;bottom:0;background:#fff;border-top:1px solid var(--line);padding:10px 16px;display:flex;justify-content:space-between;align-items:center;gap:10px}
+  .hidden{display:none}
+  @media (max-width:720px){.grid{grid-template-columns:1fr}.ro{padding:0}}
+</style>
+</head>
+<body>
+<header>
+  <h1>Input Realisasi TKD <span id="th">2026</span></h1>
+  <p>Diisi oleh masing-masing SKPD menggunakan kode akses</p>
+</header>
+
+<main>
+  <!-- LOGIN -->
+  <div id="vLogin" class="card login">
+    <label for="code">Kode Akses SKPD</label>
+    <input id="code" autocomplete="off" placeholder="Masukkan kode akses">
+    <div class="hint">Huruf besar/kecil berpengaruh.</div>
+    <div style="margin-top:12px"><button id="btnLogin">Masuk</button></div>
+    <div id="loginMsg" class="msg"></div>
+  </div>
+
+  <!-- DATA -->
+  <div id="vData" class="hidden">
+    <div class="card">
+      <div class="top">
+        <div>
+          <div class="meta" id="kode"></div>
+          <div style="font-size:16px;font-weight:700" id="nama"></div>
+        </div>
+        <button class="ghost" id="btnOut">Keluar</button>
+      </div>
+      <div class="stats">
+        <div class="stat"><b id="sPagu"></b><span>Total Pagu</span></div>
+        <div class="stat"><b id="sReal"></b><span>Total Realisasi</span></div>
+        <div class="stat"><b id="sPct"></b><span>Persentase</span></div>
+        <div class="stat"><b id="sCnt"></b><span>Baris terisi</span></div>
+      </div>
+      <div class="bar"><i id="sBar"></i></div>
+    </div>
+    <div class="card filters">
+      <div class="fgrid">
+        <label id="lSkpd" class="hidden">SKPD<select id="fSkpd"></select></label>
+        <label>Jenis Data (Induk)<select id="fInduk"></select></label>
+        <label>Sub Jenis Data (SubInduk)<select id="fSub"></select></label>
+        <label>Cari<input id="q" placeholder="Sub kegiatan / rekening…"></label>
+      </div>
+    </div>
+    <div id="list"></div>
+  </div>
+</main>
+
+<div id="saveBar" class="savebar hidden">
+  <div id="saveMsg" class="msg" style="margin:0"></div>
+  <button id="btnSave" disabled>Simpan</button>
+</div>
+
+<script>
+// ---------- KONEKSI KE SERVER ----------
+// Di dalam Apps Script: pakai google.script.run.
+// Di luar (mis. Google Sites > Embed code): pakai fetch ke URL aplikasi (tanpa cookie login Google).
+const API_URL = 'https://script.google.com/macros/s/AKfycbyfSK-Y1VswghgPEq1vf2DYalBrFqawBrA5AAhmBn5GxK-1kuebcfzxslpPYp90mT54Fg/exec';
+if (!(window.google && google.script && google.script.run)) {
+  const runner = (ok, fail) => {
+    const call = (fn, args) => {
+      fetch(API_URL, { method: 'POST', body: JSON.stringify({ fn: fn, args: args }), credentials: 'omit', redirect: 'follow' })
+        .then(r => { if (!r.ok) throw new Error('Server ' + r.status); return r.json(); })
+        .then(res => { if (res && res.__error) throw new Error(res.__error); if (ok) ok(res); })
+        .catch(err => { if (fail) fail(err); });
+    };
+    return {
+      withSuccessHandler: f => runner(f, fail),
+      withFailureHandler: f => runner(ok, f),
+      login: code => call('login', [code]),
+      save: (code, changes) => call('save', [code, changes])
+    };
+  };
+  window.google = { script: { run: runner(null, null) } };
+}
+
+let CODE = '', USER = null, TAHUN = 2026, ROWS = [], STATE = {};
+const $ = id => document.getElementById(id);
+const el = (tag, cls, txt) => { const e = document.createElement(tag); if (cls) e.className = cls; if (txt !== undefined) e.textContent = txt; return e; };
+
+function rupiah(n){ n = Number(n)||0; const neg=n<0; n=Math.abs(Math.round(n*100)/100);
+  const p=n.toFixed(2).split('.'); return (neg?'-':'')+'Rp.'+p[0].replace(/\B(?=(\d{3})+(?!\d))/g,'.')+','+p[1]; }
+function angka(n){ return rupiah(n).replace('Rp.',''); }
+function parseNum(s){ s=String(s||'').replace(/Rp\.?/i,'').replace(/\s/g,''); if(!s) return null;
+  // format Indonesia: titik ribuan, koma desimal
+  s=s.replace(/\./g,'').replace(',', '.'); const n=Number(s); return isFinite(n)?n:NaN; }
+function esc(s){ return s.replace(/[.*+?^${}()|[\]\\]/g,'\\$&'); }
+
+const SP2D_CONTOH = 'GU-212 Rp.10.000; LS-333 Rp.12.000';
+function rpSingkat(n){ const s = rupiah(n); return s.slice(-3)===',00' ? s.slice(0,-3) : s; }
+// Format: "NO_SP2D Rp.NILAI; NO_SP2D Rp.NILAI; ..."  (pemisah ; atau baris baru)
+function checkSp2d(sp, real){
+  const parts = sp.split(/[;\n]/).map(s=>s.trim()).filter(Boolean);
+  if(!parts.length) return 'Dasar Realisasi (NoSP2D) wajib diisi. Contoh: ' + SP2D_CONTOH;
+  const re = /^([A-Za-z]{2,5}-[A-Za-z0-9.\/-]+)\s+Rp\.?\s*([0-9.]+(?:,[0-9]{1,2})?)$/i;
+  let tot = 0;
+  for(let i=0;i<parts.length;i++){
+    const m = parts[i].match(re);
+    if(!m) return 'Format SP2D ke-'+(i+1)+' ("'+parts[i]+'") belum sesuai. Contoh: ' + SP2D_CONTOH;
+    const v = parseNum(m[2]);
+    if(!(v > 0)) return 'Nilai SP2D ke-'+(i+1)+' harus lebih dari 0.';
+    tot += v;
+  }
+  if(Math.abs(tot-real)>0.005) return 'Jumlah SP2D '+rpSingkat(tot)+' ≠ Realisasi '+rpSingkat(real)+'.';
+  return '';
+}
+
+// ---------- LOGIN ----------
+$('btnLogin').onclick = doLogin;
+$('code').addEventListener('keydown', e => { if(e.key==='Enter') doLogin(); });
+function doLogin(){
+  const c = $('code').value.trim();
+  if(!c){ $('loginMsg').innerHTML='<span class="err">Masukkan kode akses.</span>'; return; }
+  $('btnLogin').disabled = true; $('loginMsg').textContent = 'Memeriksa…';
+  google.script.run.withSuccessHandler(res => {
+    $('btnLogin').disabled = false;
+    if(!res.ok){ $('loginMsg').innerHTML = '<span class="err"></span>'; $('loginMsg').firstChild.textContent = res.msg; return; }
+    CODE = c; USER = res.user; TAHUN = res.tahun; $('th').textContent = TAHUN;
+    ROWS = res.rows;
+    setupFilter(res.rows);
+    load(res.rows);
+    $('vLogin').classList.add('hidden'); $('vData').classList.remove('hidden');
+    if(!USER.readOnly) $('saveBar').classList.remove('hidden');
+    $('kode').textContent = USER.kode; $('nama').textContent = USER.nama;
+    if(USER.semua){ const b=el('span','badge', USER.role + (USER.readOnly ? ' – hanya lihat' : ' – semua SKPD')); $('nama').appendChild(b); }
+    if(USER.readOnly){ const n=el('div','ro-note','Akun verifikator saat ini hanya dapat melihat data. Fitur verifikasi menyusul.'); $('list').before(n); }
+  }).withFailureHandler(err => { $('btnLogin').disabled=false; $('loginMsg').innerHTML='<span class="err"></span>'; $('loginMsg').firstChild.textContent='Gagal: '+err.message; })
+    .login(c);
+}
+$('btnOut').onclick = () => {
+  if(dirtyCount()){ let ok = true; try { ok = confirm('Ada perubahan yang belum disimpan. Tetap keluar?'); } catch(e) {} if(!ok) return; }
+  location.reload();
+};
+
+// ---------- RENDER ----------
+function load(rows){
+  ROWS = rows; STATE = {};
+  rows.forEach(r => STATE[r.row] = { real: r.real===''?null:Number(r.real), sp2d: r.sp2d, orig: { real: r.real===''?null:Number(r.real), sp2d: r.sp2d }, err:'' });
+  render(); stats(); updSave();
+}
+
+function render(){
+  const list = $('list'); list.innerHTML = '';
+  const q = $('q').value.trim().toLowerCase();
+  let curKey = null, grp = null;
+  visible().forEach(r => {
+    if(q && (r.subKeg+' '+r.rek+' '+r.sub+' '+r.skpd).toLowerCase().indexOf(q) === -1) return;
+    const key = r.kat + ' › ' + r.sub;
+    if(key !== curKey){ curKey = key; grp = el('div','group'); grp.appendChild(el('h3','', key)); list.appendChild(grp); }
+    grp.appendChild(rowCard(r));
+  });
+  if(!list.children.length) list.appendChild(el('div','card meta', ROWS.length ? 'Tidak ada data yang cocok.' : 'Belum ada baris Realisasi untuk SKPD ini.'));
+}
+
+function rowCard(r){
+  const s = STATE[r.row];
+  const card = el('div','row'); card.id = 'r'+r.row;
+  card.appendChild(el('div','meta', (USER.semua ? r.skpd + ' · ' : '') + r.subKeg));
+  card.appendChild(el('div','rek', r.rek));
+  const g = el('div','grid');
+
+  const c1 = el('div'); c1.appendChild(el('div','meta','Pagu (RKA Perg 4)')); c1.appendChild(el('div','ro', angka(r.pagu)));
+  const c2 = el('div','real'); c2.appendChild(el('div','meta','Realisasi TKD'));
+  const inp = el('input'); inp.inputMode = 'decimal'; inp.placeholder = '0,00';
+  inp.value = s.real===null ? '' : angka(s.real);
+  if(USER.readOnly) inp.disabled = true;
+  c2.appendChild(inp);
+  if(r.upd) c2.appendChild(el('div','hint','Update: '+r.upd));
+
+  const c3 = el('div'); c3.appendChild(el('div','meta','Dasar Realisasi (NoSP2D)'));
+  const lock = el('div','locked','Terbuka setelah Realisasi diisi.');
+  const box = el('div');
+  const ta = el('textarea'); ta.spellcheck = false; ta.value = s.sp2d; ta.rows = 2;
+  if(USER.readOnly) ta.readOnly = true;
+  const hint = el('div','hint');
+  hint.innerHTML = 'Format: <code>NO_SP2D Rp.NILAI; NO_SP2D Rp.NILAI; dst.</code><br>'
+    + 'Contoh: <code></code><br>Satu SP2D: <code></code> &nbsp;·&nbsp; Jumlah nilai SP2D = Realisasi.';
+  hint.querySelectorAll('code')[1].textContent = SP2D_CONTOH;
+  const exCode = hint.querySelectorAll('code')[2];
+  const setContoh = () => {
+    const v = (s.real && !isNaN(s.real) && s.real > 0) ? s.real : 10000;
+    exCode.textContent = 'GU-212 ' + rpSingkat(v);
+  };
+  setContoh();
+  box.appendChild(ta); box.appendChild(hint);
+  c3.appendChild(lock); c3.appendChild(box);
+
+  const er = el('div','rowerr');
+  g.appendChild(c1); g.appendChild(c2); g.appendChild(c3);
+  card.appendChild(g); card.appendChild(er);
+
+  function refresh(){
+    const open = s.real !== null && s.real > 0;
+    lock.classList.toggle('hidden', open); box.classList.toggle('hidden', !open);
+    let e = '';
+    if(s.real !== null && isNaN(s.real)) e = 'Nilai realisasi tidak valid.';
+    else if(s.real !== null && s.real < 0) e = 'Realisasi tidak boleh negatif.';
+    else if(open && s.real > r.pagu + 0.005) e = 'Realisasi melebihi pagu.';
+    else if(open) e = checkSp2d(ta.value, s.real);
+    s.err = e; er.textContent = isDirty(r.row) ? e : (e && s.real ? e : '');
+    card.classList.toggle('dirty', isDirty(r.row));
+    card.classList.toggle('bad', !!er.textContent);
+    stats(); updSave();
+  }
+
+  inp.addEventListener('input', () => {
+    const v = parseNum(inp.value);
+    s.real = v;
+    setContoh();   // contoh ikut nilai realisasi; kolom NoSP2D tetap kosong untuk diisi sendiri
+    s.sp2d = ta.value; refresh();
+  });
+  inp.addEventListener('blur', () => { if(s.real !== null && !isNaN(s.real)) inp.value = angka(s.real); });
+  ta.addEventListener('input', () => { s.sp2d = ta.value; refresh(); });
+  refresh();
+  return card;
+}
+
+function isDirty(row){
+  const s = STATE[row]; const o = s.orig;
+  const r1 = (s.real===null||s.real===0) ? null : s.real, r0 = (o.real===null||o.real===0) ? null : o.real;
+  const sp1 = r1===null ? '' : s.sp2d.trim(), sp0 = (o.sp2d||'').trim();
+  return r1 !== r0 || sp1 !== sp0;
+}
+function dirtyCount(){ return Object.keys(STATE).filter(isDirty).length; }
+
+function stats(){
+  let p=0, re=0, n=0;
+  visible().forEach(r => { p += r.pagu; const v = STATE[r.row].real; if(v && !isNaN(v)) { re += v; n++; } });
+  $('sPagu').textContent = rupiah(p); $('sReal').textContent = rupiah(re);
+  const pct = p ? re/p*100 : 0;
+  $('sPct').textContent = pct.toFixed(2).replace('.',',') + '%';
+  $('sCnt').textContent = n + ' / ' + visible().length;
+  $('sBar').style.width = Math.min(100,pct) + '%';
+}
+
+function updSave(){
+  const d = Object.keys(STATE).filter(isDirty);
+  const bad = d.filter(k => STATE[k].err);
+  $('btnSave').disabled = !d.length || bad.length > 0;
+  $('btnSave').textContent = d.length ? 'Simpan ('+d.length+' baris)' : 'Simpan';
+  $('saveMsg').className = 'msg ' + (bad.length ? 'err' : '');
+  $('saveMsg').textContent = bad.length ? bad.length+' baris perlu diperbaiki sebelum disimpan.' : (d.length ? 'Ada perubahan belum disimpan.' : 'Semua data tersimpan.');
+}
+
+$('q').addEventListener('input', render);
+// ---------- FILTER BERTINGKAT: SKPD > Induk > SubInduk ----------
+$('fSkpd').addEventListener('change', () => { fillInduk(); fillSub(); refreshList(); });
+$('fInduk').addEventListener('change', () => { fillSub(); refreshList(); });
+$('fSub').addEventListener('change', refreshList);
+function refreshList(){ render(); stats(); }
+
+function bySkpd(){ const f = USER && USER.semua ? $('fSkpd').value : ''; return f ? ROWS.filter(r => r.kode === f) : ROWS; }
+function byInduk(){ const f = $('fInduk').value; return f ? bySkpd().filter(r => r.indId === f) : bySkpd(); }
+function visible(){ const f = $('fSub').value; return f ? byInduk().filter(r => r.subId === f) : byInduk(); }
+
+function fillSelect(sel, items, allLabel, keep){
+  const old = sel.value; sel.innerHTML = '';
+  const all = el('option','', allLabel); all.value=''; sel.appendChild(all);
+  items.forEach(it => { const o = el('option','', it[1] + ' (' + it[2] + ' baris)'); o.value = it[0]; sel.appendChild(o); });
+  if(keep && items.some(it => it[0] === old)) sel.value = old;
+}
+function uniq(rows, idKey, nameKey){
+  const m = {}, out = [];
+  rows.forEach(r => { if(!m[r[idKey]]){ m[r[idKey]] = [r[idKey], r[nameKey], 0]; out.push(m[r[idKey]]); } m[r[idKey]][2]++; });
+  return out;
+}
+function fillInduk(){
+  const items = uniq(bySkpd(), 'indId', 'kat');
+  fillSelect($('fInduk'), items, '— Semua Jenis Data —', true);
+  if(!$('fInduk').value && items.length && !$('fInduk').dataset.init){ $('fInduk').value = items[0][0]; $('fInduk').dataset.init = 1; }
+}
+function fillSub(){
+  const items = uniq(byInduk(), 'subId', 'sub');
+  fillSelect($('fSub'), items, '— Semua Sub Jenis Data —', true);
+}
+function setupFilter(rows){
+  const s = $('fSkpd');
+  if(USER.semua){
+    fillSelect(s, uniq(rows, 'kode', 'skpd').map(x => [x[0], x[1] + ' · ' + x[0], x[2]]), '— Semua SKPD —', false);
+    $('lSkpd').classList.remove('hidden');
+  } else {
+    $('lSkpd').classList.add('hidden');
+  }
+  delete $('fInduk').dataset.init;
+  fillInduk(); fillSub();
+}
+
+$('btnSave').onclick = () => {
+  const changes = Object.keys(STATE).filter(isDirty).map(k => {
+    const s = STATE[k];
+    const real = (s.real===null||s.real===0) ? '' : s.real;
+    return { row: Number(k), real: real, sp2d: real==='' ? '' : s.sp2d };
+  });
+  $('btnSave').disabled = true; $('saveMsg').className='msg'; $('saveMsg').textContent = 'Menyimpan…';
+  google.script.run.withSuccessHandler(res => {
+    if(!res.ok){
+      $('saveMsg').className='msg err'; $('saveMsg').textContent = res.msg;
+      (res.errors||[]).forEach(e => { const c = $('r'+e.row); if(c){ c.classList.add('bad'); c.querySelector('.rowerr').textContent = e.msg; } });
+      $('btnSave').disabled = false; return;
+    }
+    load(res.rows);
+    $('saveMsg').className='msg ok'; $('saveMsg').textContent = res.msg;
+  }).withFailureHandler(err => { $('saveMsg').className='msg err'; $('saveMsg').textContent='Gagal menyimpan: '+err.message; $('btnSave').disabled=false; })
+    .save(CODE, changes);
+};
+
+window.addEventListener('beforeunload', e => { if(dirtyCount()){ e.preventDefault(); e.returnValue=''; } });
+</script>
+</body>
+</html>
