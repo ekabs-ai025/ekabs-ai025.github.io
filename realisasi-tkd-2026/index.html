@@ -178,6 +178,7 @@ if (!(window.google && google.script && google.script.run)) {
       withSuccessHandler: f => runner(f, fail),
       withFailureHandler: f => runner(ok, f),
       login: code => call('login', [code]),
+      rows: (code, start) => call('rows', [code, start]),
       save: (code, changes) => call('save', [code, changes]),
       getInfo: () => call('getInfo', []),
       setPengaturan: (code, p) => call('setPengaturan', [code, p])
@@ -273,9 +274,27 @@ function doLogin(){
   const c = $('code').value.trim();
   if(!c){ $('loginMsg').innerHTML='<span class="err">Masukkan kode akses.</span>'; return; }
   $('btnLogin').disabled = true; $('loginMsg').textContent = 'Memeriksa…';
+  const gagal = msg => { $('btnLogin').disabled=false; $('loginMsg').innerHTML='<span class="err"></span>'; $('loginMsg').firstChild.textContent = msg; };
   google.script.run.withSuccessHandler(res => {
-    $('btnLogin').disabled = false;
-    if(!res.ok){ $('loginMsg').innerHTML = '<span class="err"></span>'; $('loginMsg').firstChild.textContent = res.msg; return; }
+    if(!res.ok){ gagal(res.msg); return; }
+    // Muat sisa data bertahap
+    const all = res.rows.slice();
+    const lanjut = () => {
+      if(all.length >= (res.total || 0)){ res.rows = all; tampil(res); return; }
+      $('loginMsg').textContent = 'Memuat data… ' + all.length + ' / ' + res.total + ' baris';
+      google.script.run.withSuccessHandler(r => {
+        if(!r.ok){ gagal(r.msg); return; }
+        if(!r.rows.length){ res.rows = all; tampil(res); return; }
+        Array.prototype.push.apply(all, r.rows); lanjut();
+      }).withFailureHandler(err => gagal('Gagal memuat data: ' + err.message)).rows(c, all.length);
+    };
+    lanjut();
+  }).withFailureHandler(err => gagal('Gagal: ' + err.message))
+    .login(c);
+}
+function tampil(res){
+    const c = $('code').value.trim();
+    $('btnLogin').disabled = false; $('loginMsg').textContent = '';
     CODE = c; USER = res.user; TAHUN = res.tahun; $('th').textContent = TAHUN;
     ROWS = res.rows;
     setupFilter(res.rows);
@@ -288,8 +307,6 @@ function doLogin(){
     $('infoBox').classList.add('hidden');
     showInfo(res.info);
     if(USER.admin){ $('adminBox').classList.remove('hidden'); isiAdmin(res.info); }
-  }).withFailureHandler(err => { $('btnLogin').disabled=false; $('loginMsg').innerHTML='<span class="err"></span>'; $('loginMsg').firstChild.textContent='Gagal: '+err.message; })
-    .login(c);
 }
 $('btnOut').onclick = () => {
   if(dirtyCount()){ let ok = true; try { ok = confirm('Ada perubahan yang belum disimpan. Tetap keluar?'); } catch(e) {} if(!ok) return; }
@@ -462,7 +479,10 @@ $('btnSave').onclick = () => {
       (res.errors||[]).forEach(e => { const c = $('r'+e.row); if(c){ c.classList.add('bad'); c.querySelector('.rowerr').textContent = e.msg; } });
       $('btnSave').disabled = false; return;
     }
-    load(res.rows);
+    if(res.partial){
+      const baru = {}; res.rows.forEach(r => baru[r.row] = r);
+      load(ROWS.map(r => baru[r.row] || r));
+    } else load(res.rows);
     $('saveMsg').className='msg ok'; $('saveMsg').textContent = res.msg;
   }).withFailureHandler(err => { $('saveMsg').className='msg err'; $('saveMsg').textContent='Gagal menyimpan: '+err.message; $('btnSave').disabled=false; })
     .save(CODE, changes);
