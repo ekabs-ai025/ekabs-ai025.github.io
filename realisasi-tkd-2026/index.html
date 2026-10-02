@@ -51,6 +51,22 @@
   .locked{color:var(--mute);font-style:italic;font-size:12.5px;padding:9px 0}
   .rowerr{color:var(--err);font-size:12px;margin-top:6px}
   .savebar{position:sticky;bottom:0;background:#fff;border-top:1px solid var(--line);padding:10px 16px;display:flex;justify-content:space-between;align-items:center;gap:10px}
+  .info{max-width:380px;margin:24px auto 0;padding:12px 16px}
+  .info .t{font-size:12px;color:var(--mute)}
+  .info .p{font-size:15px;font-weight:700;margin:2px 0 6px}
+  .chip{display:inline-block;font-size:11px;font-weight:700;padding:3px 9px;border-radius:999px}
+  .chip.BUKA{background:#dcfce7;color:#166534}.chip.TUTUP{background:#fee2e2;color:#991b1b}
+  .chip.BELUM,.chip.LEWAT{background:#fef3c7;color:#92400e}
+  .info .ps{margin-top:8px;font-size:13px;background:#f8fafc;border-left:3px solid var(--pri);padding:6px 10px;border-radius:4px}
+  .periode{font-size:12.5px;color:var(--mute);margin-top:8px}
+  .admin summary{cursor:pointer;font-weight:700;color:var(--pri)}
+  .agrid{display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:10px;margin-top:12px}
+  .agrid label{font-size:12px;color:var(--mute);margin:0}
+  .agrid input,.agrid textarea{margin-top:4px;color:var(--ink);font-size:14px;font-family:inherit;font-weight:400}
+  .seg{display:flex;gap:6px;margin-top:4px}
+  .seg button{flex:1;background:#fff;color:var(--ink);border:1px solid #cbd5e1;padding:8px}
+  .seg button.on.b{background:#15803d;color:#fff;border-color:#15803d}
+  .seg button.on.t{background:#b91c1c;color:#fff;border-color:#b91c1c}
   .hidden{display:none}
   @media (max-width:720px){.grid{grid-template-columns:1fr}.ro{padding:0}}
 </style>
@@ -62,8 +78,14 @@
 </header>
 
 <main>
+  <!-- INFO STATUS & PERIODE (tampil saat aplikasi dibuka) -->
+  <div id="infoBox" class="card info">
+    <div class="t">Status entri data SKPD</div>
+    <div class="meta">Memuat status…</div>
+  </div>
+
   <!-- LOGIN -->
-  <div id="vLogin" class="card login">
+  <div id="vLogin" class="card login" style="margin-top:12px">
     <label for="code">Kode Akses SKPD</label>
     <input id="code" autocomplete="off" placeholder="Masukkan kode akses">
     <div class="hint">Huruf besar/kecil berpengaruh.</div>
@@ -88,6 +110,28 @@
         <div class="stat"><b id="sCnt"></b><span>Baris terisi</span></div>
       </div>
       <div class="bar"><i id="sBar"></i></div>
+      <div class="periode" id="periode"></div>
+    </div>
+    <div id="adminBox" class="card admin hidden">
+      <details id="adminDet">
+        <summary>Pengaturan Entri SKPD (Admin)</summary>
+        <div class="agrid">
+          <label>Status aplikasi untuk SKPD
+            <div class="seg"><button type="button" id="aBuka" class="b">Dibuka</button><button type="button" id="aTutup" class="t">Ditutup</button></div>
+          </label>
+          <label>Mulai entri<input type="datetime-local" id="aMulai"></label>
+          <label>Selesai entri<input type="datetime-local" id="aSelesai"></label>
+        </div>
+        <div class="agrid">
+          <label>Pesan untuk SKPD (opsional, tampil di halaman depan)<textarea id="aPesan" rows="2" maxlength="300" placeholder="Mis. Batas entri realisasi triwulan III."></textarea></label>
+        </div>
+        <div class="hint">Ditutup: SKPD tidak bisa masuk. Di luar periode: SKPD bisa masuk tetapi hanya melihat. Kosongkan tanggal bila tidak dibatasi. Admin, SubAdmin, dan Verifikator tidak terpengaruh.</div>
+        <div style="margin-top:10px;display:flex;gap:10px;align-items:center;flex-wrap:wrap">
+          <button id="aSimpan">Simpan Pengaturan</button>
+          <span id="aMsg" class="msg" style="margin:0"></span>
+        </div>
+        <div class="hint" id="aOleh"></div>
+      </details>
     </div>
     <div class="card filters">
       <div class="fgrid">
@@ -134,7 +178,9 @@ if (!(window.google && google.script && google.script.run)) {
       withSuccessHandler: f => runner(f, fail),
       withFailureHandler: f => runner(ok, f),
       login: code => call('login', [code]),
-      save: (code, changes) => call('save', [code, changes])
+      save: (code, changes) => call('save', [code, changes]),
+      getInfo: () => call('getInfo', []),
+      setPengaturan: (code, p) => call('setPengaturan', [code, p])
     };
   };
   window.google = { script: { run: runner(null, null) } };
@@ -171,6 +217,55 @@ function checkSp2d(sp, real){
   return '';
 }
 
+// ---------- STATUS & PERIODE ENTRI ----------
+const FASE_LABEL = { BUKA:'DIBUKA', TUTUP:'DITUTUP', BELUM:'BELUM DIMULAI', LEWAT:'SUDAH BERAKHIR' };
+function teksPeriode(i){
+  if(!i.mulaiTxt && !i.selesaiTxt) return 'Tidak dibatasi tanggal';
+  return (i.mulaiTxt || '…') + '  s.d.  ' + (i.selesaiTxt || '…');
+}
+function renderInfo(i){
+  const b = $('infoBox'); b.innerHTML = '';
+  b.appendChild(el('div','t','Periode entri data SKPD'));
+  b.appendChild(el('div','p', teksPeriode(i)));
+  b.appendChild(el('span','chip '+i.fase, FASE_LABEL[i.fase] || i.fase));
+  b.appendChild(el('div','meta', i.ket + ' (waktu server: ' + i.sekarang + ')')).style.marginTop='6px';
+  if(i.pesan) b.appendChild(el('div','ps', i.pesan));
+}
+function showInfo(i){
+  if(!i) return;
+  const p = $('periode'); p.innerHTML = '';
+  p.appendChild(document.createTextNode('Periode entri: ' + teksPeriode(i) + ' · '));
+  p.appendChild(el('span','chip '+i.fase, FASE_LABEL[i.fase] || i.fase));
+  if(i.pesan) p.appendChild(document.createTextNode(' · ' + i.pesan));
+}
+function loadInfo(){
+  google.script.run.withSuccessHandler(res => { if(res && res.info) renderInfo(res.info); })
+    .withFailureHandler(() => { $('infoBox').innerHTML = ''; $('infoBox').appendChild(el('div','meta','Status entri belum dapat dimuat. Silakan tetap masuk.')); })
+    .getInfo();
+}
+loadInfo();
+
+// ---------- PANEL ADMIN ----------
+let A_STATUS = 'BUKA';
+function setSeg(st){ A_STATUS = st; $('aBuka').classList.toggle('on', st==='BUKA'); $('aTutup').classList.toggle('on', st==='TUTUP'); }
+$('aBuka').onclick = () => setSeg('BUKA');
+$('aTutup').onclick = () => setSeg('TUTUP');
+function isiAdmin(i){
+  setSeg(i.status); $('aMulai').value = i.mulai || ''; $('aSelesai').value = i.selesai || ''; $('aPesan').value = i.pesan || '';
+  $('aOleh').textContent = i.oleh ? 'Terakhir diubah: ' + i.oleh + ', ' + i.waktu + ' (zona waktu ' + i.zona + ')' : 'Zona waktu: ' + i.zona;
+}
+$('aSimpan').onclick = () => {
+  const p = { status: A_STATUS, mulai: $('aMulai').value, selesai: $('aSelesai').value, pesan: $('aPesan').value };
+  if(p.mulai && p.selesai && p.mulai >= p.selesai){ $('aMsg').className='msg err'; $('aMsg').textContent='Tanggal selesai harus setelah tanggal mulai.'; return; }
+  $('aSimpan').disabled = true; $('aMsg').className='msg'; $('aMsg').textContent='Menyimpan…';
+  google.script.run.withSuccessHandler(res => {
+    $('aSimpan').disabled = false;
+    $('aMsg').className = 'msg ' + (res.ok ? 'ok' : 'err'); $('aMsg').textContent = res.msg;
+    if(res.ok){ isiAdmin(res.info); showInfo(res.info); }
+  }).withFailureHandler(err => { $('aSimpan').disabled=false; $('aMsg').className='msg err'; $('aMsg').textContent='Gagal: '+err.message; })
+    .setPengaturan(CODE, p);
+};
+
 // ---------- LOGIN ----------
 $('btnLogin').onclick = doLogin;
 $('code').addEventListener('keydown', e => { if(e.key==='Enter') doLogin(); });
@@ -189,7 +284,10 @@ function doLogin(){
     if(!USER.readOnly) $('saveBar').classList.remove('hidden');
     $('kode').textContent = USER.kode; $('nama').textContent = USER.nama;
     if(USER.semua){ const b=el('span','badge', USER.role + (USER.readOnly ? ' – hanya lihat' : ' – semua SKPD')); $('nama').appendChild(b); }
-    if(USER.readOnly){ const n=el('div','ro-note','Akun verifikator saat ini hanya dapat melihat data. Fitur verifikasi menyusul.'); $('list').before(n); }
+    if(USER.readOnly){ const n=el('div','ro-note', USER.roNote || 'Akun ini hanya dapat melihat data.'); $('list').before(n); }
+    $('infoBox').classList.add('hidden');
+    showInfo(res.info);
+    if(USER.admin){ $('adminBox').classList.remove('hidden'); isiAdmin(res.info); }
   }).withFailureHandler(err => { $('btnLogin').disabled=false; $('loginMsg').innerHTML='<span class="err"></span>'; $('loginMsg').firstChild.textContent='Gagal: '+err.message; })
     .login(c);
 }
