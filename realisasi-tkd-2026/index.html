@@ -19,6 +19,7 @@
   label{font-weight:600;font-size:13px;display:block;margin-bottom:6px}
   input,textarea,select{width:100%;padding:9px 10px;border:1px solid #cbd5e1;border-radius:7px;font:inherit}
   input:focus,textarea:focus{outline:2px solid #93c5fd;border-color:var(--pri)}
+  input:disabled,textarea:disabled{background:#f1f5f9;color:#475569;cursor:not-allowed}
   textarea{font-family:ui-monospace,Consolas,monospace;font-size:12.5px;resize:vertical;min-height:58px}
   button{background:var(--pri);color:#fff;border:0;border-radius:7px;padding:10px 16px;font:inherit;font-weight:600;cursor:pointer}
   button.ghost{background:transparent;color:var(--pri);border:1px solid var(--pri)}
@@ -355,7 +356,9 @@ function rowCard(r){
   const lock = el('div','locked','Terbuka setelah Realisasi diisi.');
   const box = el('div');
   const ta = el('textarea'); ta.spellcheck = false; ta.value = s.sp2d; ta.rows = 2;
-  if(USER.readOnly) ta.readOnly = true;
+  // Dasar Realisasi (NoSP2D) dimatikan untuk akun hanya-lihat dan level 2, 3, 4.
+  const kunciSp2d = USER.readOnly || [2, 3, 4].indexOf(Number(USER.level)) > -1;
+  if(kunciSp2d) ta.disabled = true;
   const hint = el('div','hint');
   hint.innerHTML = 'Format: <code>NO_SP2D Rp.NILAI; NO_SP2D Rp.NILAI; dst.</code><br>'
     + 'Contoh: <code></code><br>Satu SP2D: <code></code> &nbsp;·&nbsp; Jumlah nilai SP2D = Realisasi.';
@@ -366,7 +369,7 @@ function rowCard(r){
     exCode.textContent = 'GU-212 ' + rpSingkat(v);
   };
   setContoh();
-  box.appendChild(ta); box.appendChild(hint);
+  box.appendChild(ta); if(!kunciSp2d) box.appendChild(hint);
   c3.appendChild(lock); c3.appendChild(box);
 
   const er = el('div','rowerr');
