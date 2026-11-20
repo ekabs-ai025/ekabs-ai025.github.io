@@ -114,7 +114,7 @@
     </div>
     <div id="adminBox" class="card admin hidden">
       <details id="adminDet">
-        <summary>Pengaturan Entri SKPD (Admin)</summary>
+        <summary>Pengaturan Entri SKPD (Level 1–2)</summary>
         <div class="agrid">
           <label>Status aplikasi untuk SKPD
             <div class="seg"><button type="button" id="aBuka" class="b">Dibuka</button><button type="button" id="aTutup" class="t">Ditutup</button></div>
@@ -125,7 +125,7 @@
         <div class="agrid">
           <label>Pesan untuk SKPD (opsional, tampil di halaman depan)<textarea id="aPesan" rows="2" maxlength="300" placeholder="Mis. Batas entri realisasi triwulan III."></textarea></label>
         </div>
-        <div class="hint">Ditutup: SKPD tidak bisa masuk. Di luar periode: SKPD bisa masuk tetapi hanya melihat. Kosongkan tanggal bila tidak dibatasi. Admin, SubAdmin, dan Verifikator tidak terpengaruh.</div>
+        <div class="hint">Ditutup: SKPD tidak bisa masuk. Di luar periode: SKPD bisa masuk tetapi hanya melihat. Kosongkan tanggal bila tidak dibatasi. Pengguna level 1–4 tidak terpengaruh.</div>
         <div style="margin-top:10px;display:flex;gap:10px;align-items:center;flex-wrap:wrap">
           <button id="aSimpan">Simpan Pengaturan</button>
           <span id="aMsg" class="msg" style="margin:0"></span>
@@ -302,7 +302,10 @@ function tampil(res){
     $('vLogin').classList.add('hidden'); $('vData').classList.remove('hidden');
     if(!USER.readOnly) $('saveBar').classList.remove('hidden');
     $('kode').textContent = USER.kode; $('nama').textContent = USER.nama;
-    if(USER.semua){ const b=el('span','badge', USER.role + (USER.readOnly ? ' – hanya lihat' : ' – semua SKPD')); $('nama').appendChild(b); }
+    // Level akses (dari server): 1–2 penuh, 3–4 lihat semua SKPD (hanya lihat), 5 SKPD sendiri.
+    const lvl = USER.level ? 'Level ' + USER.level : USER.role;
+    if(USER.semua){ const b=el('span','badge', lvl + (USER.readOnly ? ' – hanya lihat' : ' – semua SKPD')); $('nama').appendChild(b); }
+    else if(USER.level){ $('nama').appendChild(el('span','badge', lvl + ' – SKPD sendiri')); }
     if(USER.readOnly){ const n=el('div','ro-note', USER.roNote || 'Akun ini hanya dapat melihat data.'); $('list').before(n); }
     $('infoBox').classList.add('hidden');
     showInfo(res.info);
